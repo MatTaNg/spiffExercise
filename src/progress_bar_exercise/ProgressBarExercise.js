@@ -88,7 +88,6 @@ const progressBarStyles = {
 const finishBtnStyles = finishButtonClicked ? {border: '3px solid red'} : {}
 return (
     <>
-      <div styles={createBreakPoints()}></div>
       <div style={progressBarStyles} className="progressBar"></div>
       {barWidth === 0 && <button className={'requestButton'} onClick={handleOnClick}>Start Request</button>}
       {barWidth > 0 && <button className={'loadingButton'}>Loading...</button>}
