@@ -1,0 +1,33 @@
+.progressBar {
+    height: 6px;
+    background-color: red;
+    margin-bottom: 10px;
+}
+
+.requestButton, .loadingButton {
+    padding: 10px;
+    border-radius: 20px;
+}
+
+.requestButton:hover, .loadingButton:hover {    
+    border: 2px solid limegreen;
+}
+
+.requestButton {
+    color: limegreen;
+    border: 1px solid limegreen;
+}
+
+.loadingButton {
+    color: limegreen;
+    border: 3px solid limegreen;
+}
+
+.finishButton:hover {
+    border: 2px solid red;
+}
+
+.finishButton {
+    color: red;
+    border: 1px solid red;
+}
