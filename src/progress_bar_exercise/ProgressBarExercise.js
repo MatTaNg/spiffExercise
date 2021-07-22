@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Exercise from "../exercise/Exercise";
 import './ProgressBarStyles.scss'
 
@@ -23,13 +23,24 @@ const Solution = (props) => {
   const [barOpacity, setBarOpacity] = useState(100);
   const [finishButtonClicked, setFinishButtonClicked] = useState(false);
   const [ignoreBreakpoints, setIgnoreBreakpoints] = useState(false);
-
+  const [timer, setTimer] = useState(0);
+  
   const intervalRef = useRef();
+  const initialTimer = useRef() 
 
   const INITIAL_PROGRESS_RATE = 166.66; //15s
   const STOP_AT = 90; //In %
   const FINISH_RATE = 1000 //in ms
   const FADE_BAR_TIME_DELAY = 3000 //inms
+
+  useEffect(() => {
+    if(barWidth > 0 && !initialTimer.current) {
+      initialTimer.current = new Date().getTime();
+    }
+    if(barWidth > 0) {
+      setTimer((new Date().getTime() - initialTimer.current) / 1000 || 0)
+    }
+  }, [barWidth])
 
   const fadeBar = () => {
     const interval = setInterval(() => {
@@ -43,22 +54,24 @@ const Solution = (props) => {
   }, FADE_BAR_TIME_DELAY / 100)
 }
 
+const shouldBarSlowDown = (barWidth, ignoreBreakpoints, finishProgress) => !finishProgress && !ignoreBreakpoints && props.breakpoints.some((breakpoint) => {
+  return barWidth <= breakpoint + 5 && barWidth >= breakpoint - 5
+})
+const shouldBarStop = (barWidth, finishProgress) => !finishProgress && barWidth >= STOP_AT;
+
   const incrementProgressBar = (progressRate, finishProgress, ignoreBreakpoints) => {
     const interval = setInterval(() => {
       intervalRef.current = interval
       setBarWidth((prevState) => {
-        const isBarNearBreakpoint = props.breakpoints.some((breakpoint) => {
-          return prevState <= breakpoint + 5 && prevState >= breakpoint - 5
-        })
-          if(finishProgress && prevState >= 100) {
+          if(prevState >= 100) {
             fadeBar();
             clearInterval(intervalRef.current);
             return prevState
           }
-          else if(!finishProgress && !ignoreBreakpoints && isBarNearBreakpoint) {
+          else if(shouldBarSlowDown(prevState, ignoreBreakpoints, finishProgress)) {
             return prevState + 0.5;
           }
-          else if(!finishProgress && prevState >= STOP_AT) {
+          else if(shouldBarStop(prevState, finishProgress)) {
             clearInterval(intervalRef.current);
             return prevState
           }
@@ -68,7 +81,7 @@ const Solution = (props) => {
   }
 
   const handleOnClick = () => {
-    incrementProgressBar(INITIAL_PROGRESS_RATE, false);
+    incrementProgressBar(INITIAL_PROGRESS_RATE, false, ignoreBreakpoints);
   }
 
 const handleFinishClick = () => {
@@ -78,23 +91,42 @@ const handleFinishClick = () => {
 }
 const handleIgnoreBreakpoints = () => {
   clearInterval(intervalRef.current)
-  incrementProgressBar(INITIAL_PROGRESS_RATE, false, !ignoreBreakpoints)
+  intervalRef.current && incrementProgressBar(INITIAL_PROGRESS_RATE, false, !ignoreBreakpoints)
   setIgnoreBreakpoints(!ignoreBreakpoints);
 }
+
+const barColor = shouldBarSlowDown(barWidth, ignoreBreakpoints, finishButtonClicked) ? 'black' : 'red';
 const progressBarStyles = {
   opacity: `${barOpacity}%`,
-  backgroundImage: `linear-gradient(to right, red ${barWidth}%, orange ${barWidth}%)`
+  backgroundImage: `linear-gradient(to right, ${barColor} ${barWidth}%, orange ${barWidth}%)`
 }
 const finishBtnStyles = finishButtonClicked ? {border: '3px solid red'} : {}
+
+const renderProgressBar = () => {
+  return <> 
+    <div style={{opacity: `${barOpacity}%`}}>{timer}</div>
+    <div style={progressBarStyles} className="progressBar"></div>
+  </>
+}
+
+const renderStartButton = () => {
+  return <>
+    {barWidth === 0 && <button className={'requestButton'} onClick={handleOnClick}>Start Request</button>}
+    {barWidth > 0 && <button className={'loadingButton'}>Loading...</button>}
+  </>
+}
+const renderBreakpointButton = () => <button className={'requestButton'} onClick={handleIgnoreBreakpoints}>{ignoreBreakpoints ? 'Allow' : 'Ignore'} Breakpoints</button>
+const renderFinishButton = () => (
+  <button style={finishBtnStyles} className={'finishButton loadingButton'} onClick={handleFinishClick}>
+  Finish
+  </button>
+)
 return (
     <>
-      <div style={progressBarStyles} className="progressBar"></div>
-      {barWidth === 0 && <button className={'requestButton'} onClick={handleOnClick}>Start Request</button>}
-      {barWidth > 0 && <button className={'loadingButton'}>Loading...</button>}
-      <button className={'requestButton'} onClick={handleIgnoreBreakpoints}>{ignoreBreakpoints ? 'Allow' : 'Ignore'} Breakpoints</button>
-      <button style={finishBtnStyles} className={'finishButton loadingButton'} onClick={handleFinishClick}>
-        Finish
-      </button>
+      {renderProgressBar()}
+      {renderStartButton()}
+      {renderBreakpointButton()}
+      {renderFinishButton()}
     </>
   );
 };
